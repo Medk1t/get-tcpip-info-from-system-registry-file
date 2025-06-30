@@ -34,48 +34,38 @@ namespace GetCompInfo
                 string dhcpIpAdress = string.Empty;
                 string dhcpDefaultGateway = string.Empty;
                 string dhcpSubnetMask = string.Empty;
-                using (RegistryKey key = Registry.LocalMachine.OpenSubKey(parametersKeypath))
+                using RegistryKey key = Registry.LocalMachine.OpenSubKey(parametersKeypath);
+                if (key != null)
                 {
-                    if (key != null)
+                    using (FileStream stream = new FileStream($@"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}\{key.GetValue("Hostname") ?? "Tcpip"}.txt", FileMode.Create, FileAccess.Write))
+                    using (StreamWriter writer = new StreamWriter(stream))
                     {
-                        using (FileStream stream = new FileStream($@"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}\{key.GetValue("Hostname") ?? "Tcpip"}.txt", FileMode.Create, FileAccess.Write))
-                        using (StreamWriter writer = new StreamWriter(stream))
+                        hostname = key.GetValue("Hostname")?.ToString();
+                        dhcpDomain = (key.GetValue("DhcpDomain") ?? key.GetValue("Domain"))?.ToString();
+                        using (RegistryKey interfacesKeys = key.OpenSubKey("Interfaces"))
                         {
-                            //foreach (var item in key.GetValueNames())
-                            //{
-                            //    writer.WriteLine($"{item} = {key.GetValue(item)}");
-                            //}
-                            hostname = key.GetValue("Hostname")?.ToString();
-                            dhcpDomain = (key.GetValue("DhcpDomain") ?? key.GetValue("Domain"))?.ToString();
-                            using (RegistryKey interfacesKeys = key.OpenSubKey("Interfaces"))
+                            foreach (var item in interfacesKeys.GetSubKeyNames())
                             {
-                                foreach (var item in interfacesKeys.GetSubKeyNames())
+                                using (RegistryKey interfaceKey = interfacesKeys.OpenSubKey(item))
                                 {
-                                    using (RegistryKey interfaceKey = interfacesKeys.OpenSubKey(item))
-                                    {
-                                        //foreach (var itm in interfaceKey.GetValueNames())
-                                        //{
-                                        //    writer.WriteLine($"\t{itm} = {interfaceKey.GetValue(itm)}");
-                                        //}
-                                        if ((interfaceKey.GetValue("DhcpIPAddress") ?? interfaceKey.GetValue("IPAddress")) != null)
-                                            dhcpIpAdress += interfaceKey.GetValue("DhcpIPAddress") as string ?? string.Join("", (interfaceKey.GetValue("IPAddress") as string[]) ?? new string[1]);
-                                        if ((interfaceKey.GetValue("DhcpSubnetMask") ?? interfaceKey.GetValue("SubnetMask")) != null)
-                                            dhcpSubnetMask += (interfaceKey.GetValue("DhcpSubnetMask") as string ?? string.Join("", (interfaceKey.GetValue("SubnetMask") as string[]) ?? new string[1]));
-                                        if ((interfaceKey.GetValue("DhcpNameServer") ?? interfaceKey.GetValue("NameServer")) != null)
-                                            dhcpNameServer += (interfaceKey.GetValue("DhcpNameServer") as string ?? interfaceKey.GetValue("NameServer") as string);
-                                        if ((interfaceKey.GetValue("DhcpDefaultGateway") ?? interfaceKey.GetValue("DefaultGateway")) != null)
-                                            dhcpDefaultGateway += interfaceKey.GetValue("DhcpDefaultGateway") as string ?? string.Join("", (interfaceKey.GetValue("DefaultGateway") as string[])?? new string[1]);
-                                    }
+                                    if ((interfaceKey.GetValue("DhcpIPAddress") ?? interfaceKey.GetValue("IPAddress")) != null)
+                                        dhcpIpAdress += interfaceKey.GetValue("DhcpIPAddress") as string ?? string.Join("", (interfaceKey.GetValue("IPAddress") as string[]) ?? new string[1]);
+                                    if ((interfaceKey.GetValue("DhcpSubnetMask") ?? interfaceKey.GetValue("SubnetMask")) != null)
+                                        dhcpSubnetMask += (interfaceKey.GetValue("DhcpSubnetMask") as string ?? string.Join("", (interfaceKey.GetValue("SubnetMask") as string[]) ?? new string[1]));
+                                    if ((interfaceKey.GetValue("DhcpNameServer") ?? interfaceKey.GetValue("NameServer")) != null)
+                                        dhcpNameServer += (interfaceKey.GetValue("DhcpNameServer") as string ?? interfaceKey.GetValue("NameServer") as string);
+                                    if ((interfaceKey.GetValue("DhcpDefaultGateway") ?? interfaceKey.GetValue("DefaultGateway")) != null)
+                                        dhcpDefaultGateway += interfaceKey.GetValue("DhcpDefaultGateway") as string ?? string.Join("", (interfaceKey.GetValue("DefaultGateway") as string[]) ?? new string[1]);
                                 }
                             }
-                            writer.WriteLine($"Hostname = {hostname}");
-                            writer.WriteLine($"DhcpDomain = {dhcpDomain}");
-                            writer.WriteLine($"DhcpIPAddress = {dhcpIpAdress}");
-                            writer.WriteLine($"DhcpDefaultGateway = {dhcpDefaultGateway}");
-                            writer.WriteLine($"DhcpSubnetMask = {dhcpSubnetMask}");
-                            writer.WriteLine($"DhcpNameServer = {dhcpNameServer}");
-                            writer.Close();
                         }
+                        writer.WriteLine($"Hostname = {hostname}");
+                        writer.WriteLine($"DhcpDomain = {dhcpDomain}");
+                        writer.WriteLine($"DhcpIPAddress = {dhcpIpAdress}");
+                        writer.WriteLine($"DhcpDefaultGateway = {dhcpDefaultGateway}");
+                        writer.WriteLine($"DhcpSubnetMask = {dhcpSubnetMask}");
+                        writer.WriteLine($"DhcpNameServer = {dhcpNameServer}");
+                        writer.Close();
                     }
                 }
             }
